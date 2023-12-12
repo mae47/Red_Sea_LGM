@@ -47,11 +47,14 @@ Options for 'populations'
 
 ## 3. Calculating observed nucleotide diversity from vcf
 
-* Scripts treat alleles as haploid individuals, to match later simulations which will be haploid individuals
+* First, these scripts treat alleles as haploid individuals, to match later simulations which will be haploid individuals
 
-* Sharks, no missing data: [nd_from_vcf_haploid.sh](https://github.com/mae47/Red_Sea_LGM/tree/main/Scripts/nd_from_vcf_haploid.sh)
+Sharks, no missing data: [nd_from_vcf_haploid.sh](https://github.com/mae47/Red_Sea_LGM/tree/main/Scripts/nd_from_vcf_haploid.sh)  
+Teleosts, some missing data: [nd_from_vcf_haploid_md.sh](https://github.com/mae47/Red_Sea_LGM/tree/main/Scripts/nd_from_vcf_haploid_md.sh)
 
-* Teleosts, some missing data: [nd_from_vcf_haploid_md.sh](https://github.com/mae47/Red_Sea_LGM/tree/main/Scripts/nd_from_vcf_haploid_md.sh)
+* Output files named "pairwise_pi.dist"
+
+* 2nd script uses pairwise_pi.dist file to calculate within pop1 nd, within pop2 nd, between pop nd, and Fst: [calculate_obs_data_sumstats_plink_haploid.sh](https://github.com/mae47/Red_Sea_LGM/tree/main/Scripts/calculate_obs_data_sumstats_plink_haploid.sh)
 
 ## 4. Power Analysis
 
