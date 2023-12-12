@@ -121,7 +121,7 @@ We will use the cell registered version, so that the extent of the raster start
 on a nice even number. Read in the dataset (in reality, with `raster`, we don't 
 read data in memory, just open a connection)
 
-# Set own local path for downloaded dataset
+# Download dataset from link and set own local path below
 
 ```{r}
 #set to your own local path
