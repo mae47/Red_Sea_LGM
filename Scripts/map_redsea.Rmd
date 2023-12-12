@@ -1,0 +1,260 @@
+---
+title: "Red_Sea_sf_maps"
+author: "EFM"
+date: "05/07/2021"
+output: html_document
+---
+#Edited by MAE
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+#knitr::opts_chunk$set(echo = TRUE, fig.width=40)
+#knitr::knit_exit()
+```
+
+***
+## The region of interest
+
+Libraries needed for this section
+
+```{r}
+library("ggplot2")
+theme_set(theme_bw())
+library("sf")
+library("rgdal")
+library("rgeos")
+library("sf")
+library("rnaturalearth")
+library("rnaturalearthdata")
+```
+
+First step is to find the broad region that we want to plot
+
+The package `rnaturalearth` provides a map of countries of the entire world. Use `ne_countries` to pull country data and choose the scale (`rnaturalearthhires` is necessary for scale = "large"). The function can return sp classes (default) or directly sf classes, as defined in the argument `returnclass`:
+```{r}
+world <- ne_countries(scale = "medium", returnclass = "sf")
+```
+
+Plotting the whole world would give this
+
+```{r}
+ggplot(world) + 
+  geom_sf()+
+  coord_sf(expand = FALSE)+
+  xlab("Longitude") + 
+  ylab("Latitude")
+```
+
+You can check for probmlematic polygons with tbe below code. 
+These make messy plots and need to be sorted before you can plot the map.
+```{r}
+table(st_is_valid(world))
+```
+
+There were problematic polygons ('FALSE'). We can fix it with `st_make_valid`:
+```{r}
+world <-st_make_valid(world)
+table(st_is_valid(world))
+```
+
+
+We create a small `st` object with two points marking two opposite corners of our desired plot, and set its `crs` to standard lat long coordinates. We then project its coordinates, and get the bounding box which are the values that we need as limits for our plot.
+
+Also We will be using the Albers Equal Area projection, which covers well areas at mid-latitudes, potentially with a large east to west span.
+for the projection both.  
+
+The `proj4` code for this projection is `+proj=aea +lat_1=20 +lat_2=60 +lat_0=40 +lon_0=-96 +datum=NAD83 +units=km +no_defs` (these numbers here are the standard setting for AEA for the USA). 
+
+The first element gives the type of projection (`aea`, which is Albers Equal Area). We then have the standard parallers within which distortion is minimized, 'lat_1' and 'lat_2'; the "one-sixth rule" places the first standard parallel at one-sixth the range above the southern boundary and the second standard parallel minus one-sixth the range below the northern limit. We then have the parallel of observation, 'lat'; dosen't seem to be any clear advice on how to choose it, probably best to put in in the middle of the standard parallels). We then have the meridian on which the projection will be centered ('lon'). 
+
+The datum used for the projection will depend on the type of projection, you probably dont need to worry about this as for Albers Equal Area, we use `+datum=NAD83`. The units defines the units used for the projection; meters are commonly found in standard strings for projections, but if you are working on large areas, km are more practical to avoid very large numbers. The `+no_defs` is an old option from the proj4 library (which we use for projections) was used to ensure that no settings were overriden by the default files; it is now the standard behaviour and it is not needed, but you will find often still find it in proj4 strings used in examples and papers. A full list of parameters for the `+proj` string can be foudn here: https://proj.org/usage/projections.html. 
+
+# Edit lat and long ranges and calculate/edit aea_proj lat_ and lon_ values
+
+```{r}
+# this is laid out (x,y), (x,y)
+# so long (x) between 20 and 60; and lat (y) between -5 and 40
+corners_raw<-st_sf(corners = 1:2, geom = st_sfc(st_point(c(20,-5)), st_point(c(60,40))), crs = "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0")
+#lat_1 = 1/6th above the bottom: lat_range/6=45/6=7.5, -5+7.5=2.5
+#lat_2 = 1/6th below top = 40-7.5=32.5
+#lat_0 = middle of lat_1 and lat_2 = median(2.5:32.5)=17.5 
+#lon_0 = middle of the lon_range = median(20:60)=40 
+aea_proj<-"+proj=aea +lat_1=2.5 +lat_2=32.5 +lat_0=17.5 +lon_0=40 +datum=NAD83 +units=km +no_defs"
+bbox_proj<-st_bbox(st_transform(corners_raw,crs=aea_proj))
+bbox_proj
+```
+
+We can now use these printed output values for our plot
+N.B. you want this to be wider than your final plot in case you need to tweak the region you are lookinng at and to be sure you get 'fancy-background-map' to
+all the edges of your final plot - more of an issue at higher latitudes where the
+world has more of a curve on it.
+```{r}
+ggplot(data = world) +
+  geom_sf() +
+  coord_sf(xlim = c(bbox_proj$xmin, bbox_proj$xmax), ylim = c(bbox_proj$ymin, bbox_proj$ymax), expand = FALSE,
+           crs=aea_proj)
+```
+
+This region looks okay for now so the next step is to build the colourful base map
+for this area
+
+***
+## The base etopo map
+
+Some more libraries
+```{r}
+library(rasterVis)
+library(marmap)
+library(gdalUtils)
+library(raster)
+library(graticule)
+library(terra)
+library(tmaptools)
+```
+
+
+First step is to creat a raster of the correct extent  
+
+
+We use a full ETOPO1 dataset downloaded from https://www.ngdc.noaa.gov/mgg/global/relief/ETOPO1/data/ice_surface/grid_registered/netcdf/
+We will use the cell registered version, so that the extent of the raster start 
+on a nice even number. Read in the dataset (in reality, with `raster`, we don't 
+read data in memory, just open a connection)
+
+# Set own local path for downloaded dataset
+
+```{r}
+#set to your own local path
+etopo_path<-"/home/maddie/Documents/PhD/LGM_paper/new_plots/map/ETOPO1_Ice_g_gmt4.grd"
+etopo1<-raster::raster(etopo_path,varname="z")
+```
+
+Need to create a target `raster` that we will use to crop `etopo` for that region.
+
+Here we build the colours needed for the map.
+```{r}
+etopo_colour_scale<-function(x){
+# these colours and breaks are from the source code of marmap::scale_fill_etopo
+etopo <- read.csv(textConnection(
+"altitudes,colours
+10000,#FBFBFB
+4000,#864747
+3900,#7E4B11
+2000,#9B8411
+1900,#BD8D15
+300,#F0CF9F
+0,#307424
+-1,#AFDCF4
+-12000,#090B6A
+"
+), stringsAsFactors=FALSE)
+etopo_ramp_function<-scales::gradient_n_pal(colours=etopo$colours,values=scales::rescale(etopo$altitudes))
+etopo_ramp_function(scales::rescale(x,from=range(etopo$altitudes)))
+}
+```
+
+
+In the previous section we decided on lat longs of a bounding box (plot limits). 
+That was long between 20 and 60; and lat between -5 and 40.
+We now need to create a target `raster` that we will use to crop `etopo`. 
+We have to be careful to match the resolution of our target to the exisiting etopo map.
+
+# Edit lat and long ranges as set previously, and filepath
+
+```{r}
+redsea_raw<-raster(xmn=20,xmx=60,ymn=-5,ymx=40,resolution=res(etopo1))
+redsea_raw<-crop(etopo1,redsea_raw)
+crs(redsea_raw)<-"+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0"
+writeRaster(redsea_raw,"./output_redsea/redsea_raw.nc",overwrite=TRUE,format="CDF")
+rm(redsea_raw)
+```
+
+Now project to Albers equal area:
+
+# Edit filepath and proj lat_ and lon_ values as calculated previously
+
+```{r}
+gdalwarp(srcfile="./output_redsea/redsea_raw.nc",dstfile="./output_redsea/redsea_proj",s_srs="+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0",
+t_srs="+proj=aea +lat_1=2.5 +lat_2=32.5 +lat_0=17.5 +lon_0=40 +datum=NAD83 +units=km +no_defs",tr=c(0.5,0.5),overwrite=T)
+```
+
+
+Subset the raster as desired to eliminate grey non-coloured areas and crop to only 'fancy-background-map' areas or smaller
+
+# Set filepath and crop map area
+
+```{r}
+raster::raster("./output_redsea/redsea_proj")->redsea_proj
+redsea_proj_crop<-raster(xmn=-1700, xmx=1900, ymn=-1800, ymx=1960,resolution=res(redsea_proj))
+crs(redsea_proj_crop)<-crs(redsea_proj)
+redsea_proj_crop<-crop(redsea_proj,redsea_proj_crop)
+```
+
+Now plot it and re-adjust above if necessary. Dont worry about stretch for now
+```{r}
+# Notice `g`plot (from rasterVis) and not `gg`plot
+gplot(redsea_proj_crop, maxpixels=10^6) + 
+  geom_raster(aes(fill = value)) +
+  scale_fill_etopo()+
+  # remove margins
+  scale_x_continuous(expand=c(0,0)) +
+  scale_y_continuous(expand=c(0,0))
+```
+
+
+
+We can aggregate it (to make it easier to handle) without losing sharpness 
+- aiming for between 500k and 1M pixels
+Change the tr=c(,) values to affect the number of pixels. tr = target resolution
+te=c needs to match the cropped raster subset above
+
+# Set filepaths and set (te) cropped raster values as settled on above. Estimate (tr) values prior to testing below
+
+```{r}
+gdalUtils::gdalwarp(srcfile="./output_redsea/redsea_proj",dstfile="./output_redsea/redsea_proj_crop2",tr=c(4,4), te=c(-1700,-1800,1900,1960),overwrite = T)
+
+redsea_proj_crop2_alt<-raster::raster("./output_redsea/redsea_proj_crop2")
+```
+
+
+Check the pixel number (ncell) and adjust target resolution (tr) above if necessary
+- aiming for between 500k and 1M pixels
+Decreasing (tr=c()) values increases pixels
+```{r}
+redsea_proj_crop2_alt
+```
+
+Looks good so we can run with this
+
+In order to plot with ggplot need to 'fortify' the data to 
+turn it into a df
+```{r}
+redsea_fortified<-raster::as.data.frame(redsea_proj_crop2_alt,xy=TRUE)
+names(redsea_fortified)<-c("long","lat","elevation")
+```
+
+Set which graticules we want to plot (in this case, every 10 degrees for both 
+lat and long) and plot the map
+In the previous section we decided on lat longs of a bounding box (plot limits). 
+That was long between 20 and 60; and lat between -5 and 40.
+grat_crop wider than lat/long range
+edit prj_char_string
+
+# Edit proj lat_and lon_ values as previously calculated. Can also edit plot axes text sizes etc
+
+```{r}
+prj<-crs(redsea_proj_crop2_alt)
+plot_extent<-extent(redsea_proj_crop2_alt)
+prj_char_string<-"+proj=aea +lat_1=2.5 +lat_2=32.5 +lat_0=17.5 +lon_0=40 +datum=NAD83 +units=km +no_defs"
+
+ggplot() + 
+  geom_raster(data=subset(redsea_fortified),aes(x=long, y=lat,fill = elevation)) +
+  scale_fill_etopo()+  
+  geom_contour(data=redsea_fortified,aes(x=long, y=lat,z=elevation),
+               breaks=c(0), colour="black", size=0.2)+
+  coord_sf(expand=FALSE,crs=prj,xlim=plot_extent[1:2],ylim=plot_extent[3:4])+
+  theme(axis.text=element_text(size=7),axis.title=element_text(size=9),legend.text=element_text(size=7),legend.title=element_text(size=9))
+```
+
+# Added location names/labels on top of map in Powerpoint
+
