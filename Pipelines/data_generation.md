@@ -43,7 +43,9 @@ Options for 'populations'
 --vcf, output SNPs and haplotypes in a vcf file  
 --fstats, enable SNP and haplotype-based F statistics
 
-##3. Power Analysis
+* Output files named "populations.snps.vcf"
+
+## 3. Power Analysis
 
 * power_analysis_in_R script for each species outputs a csv table with 95% coverage, the out-of-box (OOB) R2 value, median and mean R2 values for each of the 15 population parameters. It also outputs a pdf with plots of estimated vs simulated median and mean values for each parameter, with the axes scales roughly set to the range of possible values based on prior ranges.
 
