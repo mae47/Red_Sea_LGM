@@ -1,3 +1,5 @@
+## 1. Confirming model validity
+
 ## 1. Shark model selection
 
 ## 2. Power analysis for model selection
