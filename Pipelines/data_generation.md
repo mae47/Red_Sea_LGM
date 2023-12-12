@@ -66,7 +66,15 @@ Teleosts, some missing data: [nd_from_vcf_haploid_md.sh](https://github.com/mae4
 
 [2d-sfs_13112022_cut.Rmd](https://github.com/mae47/Red_Sea_LGM/tree/main/Scripts/2d-sfs_13112022_cut.Rmd)
 
-## 5. Power Analysis
+## 5. Model simulations
+
+## 6. Shark model selection
+
+## 7. Power analysis for model selection
+
+## 8. Parameter estimation
+
+## 9. Power analysis for parameter estimation
 
 * power_analysis_in_R script for each species outputs a csv table with 95% coverage, the out-of-box (OOB) R2 value, median and mean R2 values for each of the 15 population parameters. It also outputs a pdf with plots of estimated vs simulated median and mean values for each parameter, with the axes scales roughly set to the range of possible values based on prior ranges.
 
