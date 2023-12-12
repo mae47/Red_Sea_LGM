@@ -58,7 +58,15 @@ Teleosts, some missing data: [nd_from_vcf_haploid_md.sh](https://github.com/mae4
 
 [calculate_obs_data_sumstats_plink_haploid.sh](https://github.com/mae47/Red_Sea_LGM/tree/main/Scripts/calculate_obs_data_sumstats_plink_haploid.sh)
 
-## 4. Power Analysis
+## 4. Calculating 2D SFS from vcf (and appending between pop nucleotide diversity)
+
+* Adapted from function vcf2sfs
+
+* Creates a genotype table from diploid vcf and popmap. Generates SFS not accounting for missing data (already filtered out of shark target gene capture data) or imputing ONLY the missing data. Folds SFS. Plots SFS. Writes to .dadi format. Previously calculated between-pop nucleotide diversity is manually added if required. Then removes/cuts unwanted columns of the MAF table from the folded .dadi file, as well as monomorphic sites
+
+[2d-sfs_13112022_cut.Rmd](https://github.com/mae47/Red_Sea_LGM/tree/main/Scripts/2d-sfs_13112022_cut.Rmd)
+
+## 5. Power Analysis
 
 * power_analysis_in_R script for each species outputs a csv table with 95% coverage, the out-of-box (OOB) R2 value, median and mean R2 values for each of the 15 population parameters. It also outputs a pdf with plots of estimated vs simulated median and mean values for each parameter, with the axes scales roughly set to the range of possible values based on prior ranges.
 
