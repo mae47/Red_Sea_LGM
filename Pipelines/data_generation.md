@@ -45,7 +45,15 @@ Options for 'populations'
 
 * Output files named "populations.snps.vcf"
 
-## 3. Power Analysis
+## 3. Calculating observed nucleotide diversity from vcf
+
+* Scripts treat alleles as haploid individuals, to match later simulations which will be haploid individuals
+
+* Sharks, no missing data: [nd_from_vcf_haploid.sh](https://github.com/mae47/Red_Sea_LGM/tree/main/Scripts/nd_from_vcf_haploid.sh)
+
+* Teleosts, some missing data: [nd_from_vcf_haploid_md.sh](https://github.com/mae47/Red_Sea_LGM/tree/main/Scripts/nd_from_vcf_haploid_md.sh)
+
+## 4. Power Analysis
 
 * power_analysis_in_R script for each species outputs a csv table with 95% coverage, the out-of-box (OOB) R2 value, median and mean R2 values for each of the 15 population parameters. It also outputs a pdf with plots of estimated vs simulated median and mean values for each parameter, with the axes scales roughly set to the range of possible values based on prior ranges.
 
