@@ -54,7 +54,9 @@ Teleosts, some missing data: [nd_from_vcf_haploid_md.sh](https://github.com/mae4
 
 * Output files named "pairwise_pi.dist"
 
-* 2nd script uses pairwise_pi.dist file to calculate within pop1 nd, within pop2 nd, between pop nd, and Fst: [calculate_obs_data_sumstats_plink_haploid.sh](https://github.com/mae47/Red_Sea_LGM/tree/main/Scripts/calculate_obs_data_sumstats_plink_haploid.sh)
+* 2nd script uses pairwise_pi.dist file to calculate within pop1 nd, within pop2 nd, between pop nd, and Fst
+
+[calculate_obs_data_sumstats_plink_haploid.sh](https://github.com/mae47/Red_Sea_LGM/tree/main/Scripts/calculate_obs_data_sumstats_plink_haploid.sh)
 
 ## 4. Power Analysis
 
