@@ -1,5 +1,9 @@
 # Red_Sea_LGM
 
+## Pipelines
+
+* See Pipelines folder for steps on data generation, data analysis, and links to scripts for generating figures
+
 ## Downloaded data
 
 * Sharks: See Data archiving section of Maisano Delser et al 2019: https://doi.org/10.1038/s41437-018-0164-0  
@@ -11,8 +15,6 @@ Adapted vcf file can be found in the data folder (cm_redsea_sey....vcf.gz)
 
 * Pomacanthus maculosus: See Data availability statement of Torquato et al 2019: https://doi.org/10.1002/ece3.5622
 
-## Pipelines
 
-* Data generation, data analysis, and links to relevant scripts for generating figures
 
 
