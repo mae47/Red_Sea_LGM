@@ -1,8 +1,12 @@
+## Main text
+
 Figure 1. A map of sampling locations and sample sizes in the Red Sea and Indian Ocean:
 
 Figure 3. Histograms of simulated nucleotide diversity data, with observed data overlaid in red:
 
 Figure 4. Plots for the posterior distributions of select population parameter estimates:
+
+## Supplementary information
 
 Figure S1. A map of the Red Sea and surrounding areas: [map_redsea.Rmd](https://github.com/mae47/Red_Sea_LGM/blob/main/Scripts/map_redsea.Rmd)
 
