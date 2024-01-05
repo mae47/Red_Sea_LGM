@@ -74,22 +74,17 @@ Teleosts, some missing data: [nd_from_vcf_haploid_md.sh](https://github.com/mae4
 
 * See the readme.txt file in the root folder for instructions on file structure, which files vary between species (number of loci etc), how to check all the editable parameters, and the order of submission of scripts
 
-* Though varying in sample sizes and number/length of loci, the three teleost species - Dascyllus abudafur, Dascyllus trimaculatus, and Pomacanthus maculosus - had the same parameter priors. Carcharhinus melanopterus had different priors (in the .tpl file) for a few of the parameters.
+*  Template simulation folders for each species can be found [here](https://github.com/mae47/Red_Sea_LGM/tree/main/Scripts/simulations)
+
+* Though varying in sample sizes and number/length of loci, the three teleost species - Dascyllus abudafur, Dascyllus trimaculatus, and Pomacanthus maculosus - had the same parameter priors. Carcharhinus melanopterus had different priors (in the root > model > template > .tpl file) for a few of the parameters.
 
 * The two Dascyllus species simulations were run using an array job with 500 folders and 20 simulations per folder. Due to time constraints, P. maculosus simulations were run using an array job with 1000 folders and only 10 simulations per folder. See the readme.txt file for where to change the number of folders and the number of sims in each folder.
 
 * Basic order of submission:
 
-    root > script > create_multiple_folders.sh
-    root > array job submission file
+    root > script > create_multiple_folders.sh  
+    root > array job submission file  
     root > script > mege_all_sfs_def.r
-
-* Simulation folders for each species can be found below:
-
-(Dascyllus_abudafur)
-(Dascyllus trimaculatus)
-(Pomacanthus maculosus)
-(Carcharhinus maculosus)
 
 ## 6. Completed 10k simulation datasets
 
