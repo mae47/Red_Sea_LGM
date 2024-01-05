@@ -1,4 +1,4 @@
-## Observed Data
+# Observed Data
 
 ## 1. Demultiplexing raw fastq.gz files (RADseq only)
 
@@ -68,7 +68,7 @@ Teleosts, some missing data: [nd_from_vcf_haploid_md.sh](https://github.com/mae4
 
 [2d-sfs_13112022_cut.Rmd](https://github.com/mae47/Red_Sea_LGM/tree/main/Scripts/2d-sfs_13112022_cut.Rmd)
 
-## Simulated Data
+# Simulated Data
 
 ## 5. Model simulations
 
