@@ -33,9 +33,7 @@ ustacks -m = 3, minimum depth of coverage to create a stack
 ustacks –N = 5 ('M' + 2), maximum number of mismatches allowed to align secondary reads to primary stacks  
 cstacks -n = 2, maximum number of mismatches allowed between stacks between individuals
 
-* STOPPED at tsv2bam step. Resulting bam files were filtered for a minimum coverage of eight using samtools v.1.9 (Danecek et al., 2021)
-
-* [process_bam_files_8cov.sh](https://github.com/mae47/Red_Sea_LGM/tree/main/Scripts/process_bam_files_8cov.sh)
+* STOPPED at tsv2bam step. Resulting bam files were filtered for a minimum coverage of eight using samtools v.1.9 (Danecek et al., 2021): [process_bam_files_8cov.sh](https://github.com/mae47/Red_Sea_LGM/tree/main/Scripts/process_bam_files_8cov.sh)
 
 * Continued with the ‘gstacks’ and ‘populations’ components of the ‘denovo_map.pl’ pipeline: [denovo_assembly_manual.sh](https://github.com/mae47/Red_Sea_LGM/tree/main/Scripts/denovo_assembly_manual.sh)
 
@@ -58,15 +56,24 @@ Teleosts, some missing data: [nd_from_vcf_haploid_md.sh](https://github.com/mae4
 
 * 2nd script - uses pairwise_pi.dist file to calculate within pop1 nd, within pop2 nd, between pop nd, and Fst
 
-[calculate_obs_data_sumstats_plink_haploid.sh](https://github.com/mae47/Red_Sea_LGM/tree/main/Scripts/calculate_obs_data_sumstats_plink_haploid.sh)
+[calculate_obs_data_sumstats_plink_haploid.r](https://github.com/mae47/Red_Sea_LGM/tree/main/Scripts/calculate_obs_data_sumstats_plink_haploid.r)
 
-## 4. Calculating 2D SFS from vcf (and appending between pop nucleotide diversity)
+* Between population nucleotide diversities:
+
+  Da: 0.005483947242  
+  Dt: 0.00481223175259259  
+  Pm: 0.00274512082462963  
+  Cm: 0.000590645546173469
+
+## 4. Calculating 2D SFS from vcf
 
 * Adapted from function vcf2sfs
 
-* Creates a genotype table from diploid vcf and popmap. Generates SFS not accounting for missing data (already filtered out of shark target gene capture data) or imputing ONLY the missing data. Folds SFS. Plots SFS. Writes to .dadi format. Previously calculated between-pop nucleotide diversity is manually added if required. Then removes/cuts unwanted columns of the MAF table from the folded .dadi file, as well as monomorphic sites
+* Creates a genotype table from diploid vcf and popmap. Generates SFS not accounting for missing data (already filtered out of shark target gene capture data) or imputing ONLY the missing data. Folds SFS. Plots SFS. Writes to .dadi format. Then removes/cuts unwanted columns of the MAF table from the folded .dadi file, as well as monomorphic sites
 
 [2d-sfs_13112022_cut.Rmd](https://github.com/mae47/Red_Sea_LGM/tree/main/Scripts/2d-sfs_13112022_cut.Rmd)
+
+* Completed 2D SFS in dadi format for each species can be found in [targets](https://github.com/mae47/Red_Sea_LGM/tree/main/data/targets)
 
 # Simulated Data
 
@@ -88,7 +95,9 @@ Teleosts, some missing data: [nd_from_vcf_haploid_md.sh](https://github.com/mae4
 
 ## 6. Completed 10k simulation datasets
 
-* Include the def file, the 2D SFS only (dadi_cut_), and the 2D SFS with nucleotide diversity appended (dadi_cut_pi_), all with 10k rows/simulations
+* Include the def file and the 2D SFS only (dadi_cut_), with 10k rows/simulations, used for parameter estimation and model selection.
+
+* Also includes the 2D SFS with nucleotide diversity appended (dadi_cut_pi_), and a list of only the nucleotide diversities (pi_), used for checking the fit of the model.
 
 * Simulated datasets for each species can be found [here](https://github.com/mae47/Red_Sea_LGM/tree/main/data/10k_simulated_datasets)
 
