@@ -93,7 +93,9 @@ Teleosts, some missing data: [nd_from_vcf_haploid_md.sh](https://github.com/mae4
 
 ## 6. Completed 10k simulation datasets
 
-* Include the def file, the 2D SFS only (dadi_cut_), and the 2D SFS with nucleotide diversity appended (dadi_cut_pi_), all with 10k rows/simulations
+* Include the def file and the 2D SFS only (dadi_cut_), with 10k rows/simulations, used for parameter estimation and model selection.
+
+* Also includes the 2D SFS with nucleotide diversity appended (dadi_cut_pi_), and a list of only the nucleotide diversities (pi_), used for checking the fit of the model.
 
 * Simulated datasets for each species can be found [here](https://github.com/mae47/Red_Sea_LGM/tree/main/data/10k_simulated_datasets)
 
