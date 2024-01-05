@@ -1,7 +1,5 @@
 ## Observed Data
 
-## Steps 1 -2 RADseq data only. Steps 3 - 4 RADseq teleost data and target capture shark data
-
 ## 1. Demultiplexing raw fastq.gz files (RADseq only)
 
 * Used process_radtags: https://catchenlab.life.illinois.edu/stacks/comp/process_radtags.php
