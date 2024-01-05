@@ -76,7 +76,7 @@ Teleosts, some missing data: [nd_from_vcf_haploid_md.sh](https://github.com/mae4
 
 *  Template simulation folders for each species can be found [here](https://github.com/mae47/Red_Sea_LGM/tree/main/Scripts/simulations)
 
-* Though varying in sample sizes and number/length of loci, the three teleost species - Dascyllus abudafur, Dascyllus trimaculatus, and Pomacanthus maculosus - had the same parameter priors. Carcharhinus melanopterus had different priors (in the root > model > template > .tpl file) for a few of the parameters.
+* Though varying in sample sizes and number/length of loci, the three teleost species - Dascyllus abudafur, Dascyllus trimaculatus, and Pomacanthus maculosus - had the same parameter priors. Carcharhinus melanopterus (cosmo0_model) had different priors (in the root > model > template > .tpl file) for a few of the parameters. For C. melanopterus, cosmo0_model, or model "bottleneck" in Supplementary information, is the focus model equivalent to the single model used in the main text for the other three species. cosmo2_model is alternative model "recolonisation" in Supplementary information.
 
 * The two Dascyllus species simulations were run using an array job with 500 folders and 20 simulations per folder. Due to time constraints, P. maculosus simulations were run using an array job with 1000 folders and only 10 simulations per folder. See the readme.txt file for where to change the number of folders and the number of sims in each folder.
 
@@ -88,9 +88,11 @@ Teleosts, some missing data: [nd_from_vcf_haploid_md.sh](https://github.com/mae4
 
 ## 6. Completed 10k simulation datasets
 
-* 2D SFS only
+* Include the def file, the 2D SFS only (dadi_cut_), and the 2D SFS with nucleotide diversity appended (dadi_cut_pi_), all with 10k rows/simulations
 
-* 2D SFS with appended nucleotide diversity 
+* Simulated datasets for each species can be found [here](https://github.com/mae47/Red_Sea_LGM/tree/main/data/10k_simulated_datasets)
+
+* NB As above, for C. melanopterus, cosmo0_model, or model "bottleneck" in Supplementary information, is the focus model equivalent to the single model used in the main text for the other three species. cosmo2_model is alternative model "recolonisation" in Supplementary information.
 
 
 
