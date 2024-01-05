@@ -250,10 +250,11 @@ prj_char_string<-"+proj=aea +lat_1=2.5 +lat_2=32.5 +lat_0=17.5 +lon_0=40 +datum=
 ggplot() + 
   geom_raster(data=subset(redsea_fortified),aes(x=long, y=lat,fill = elevation)) +
   scale_fill_etopo()+  
-  geom_contour(data=redsea_fortified,aes(x=long, y=lat,z=elevation),
+  geom_contour(data=redsea_fortified,aes(x=long, y=lat, z=elevation),
                breaks=c(0), colour="black", size=0.2)+
   coord_sf(expand=FALSE,crs=prj,xlim=plot_extent[1:2],ylim=plot_extent[3:4])+
   theme(axis.text=element_text(size=7),axis.title=element_text(size=9),legend.text=element_text(size=7),legend.title=element_text(size=9))
+#+annotation_scale
 ```
 
 # Added location names/labels on top of map in Powerpoint
