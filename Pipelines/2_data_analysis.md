@@ -1,10 +1,14 @@
 ## 1. Confirming model validity
 
-* Run using between population pairwise pi. See pipeline [1_data_generation](https://github.com/mae47/Red_Sea_LGM/edit/main/Pipelines/1_data_generation.md) for calculated between population pairwise pi for each species.
+* Run using between population pairwise pi. See pipeline [1_data_generation](https://github.com/mae47/Red_Sea_LGM/edit/main/Pipelines/1_data_generation.md) for observed/calculated between population pairwise pi values for each species.
+
+* The simulated 10k nucleotide diversities (filename beginning "pi_") for each species can be found [here](https://github.com/mae47/Red_Sea_LGM/edit/main/data/10k_simulated_datasets)
 
 * The script [abc_plot_sumstats_nd.r](https://github.com/mae47/Red_Sea_LGM/tree/main/Scripts/abc_plot_sumstats_nd.r) plots the observed/calculated between population pairwise pi over the range of simulated between population pairwise pi values, to check that the simulated data covers the observed data
 
 ## 2. Shark model selection
+
+
 
 ## 3. Power analysis for model selection
 
