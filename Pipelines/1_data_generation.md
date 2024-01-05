@@ -1,4 +1,4 @@
-### Observed Data
+## Observed Data
 
 ## Steps 1 -2 RADseq data only. Steps 3 - 4 RADseq teleost data and target capture shark data
 
@@ -70,7 +70,7 @@ Teleosts, some missing data: [nd_from_vcf_haploid_md.sh](https://github.com/mae4
 
 [2d-sfs_13112022_cut.Rmd](https://github.com/mae47/Red_Sea_LGM/tree/main/Scripts/2d-sfs_13112022_cut.Rmd)
 
-### Simulated Data
+## Simulated Data
 
 ## 5. Model simulations
 
