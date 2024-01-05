@@ -1,5 +1,9 @@
 ## 1. Confirming model validity
 
+* Run using between population pairwise pi. See pipeline [1_data_generation](https://github.com/mae47/Red_Sea_LGM/edit/main/Pipelines/1_data_generation.md) for calculated between population pairwise pi for each species.
+
+* The script [abc_plot_sumstats_nd.r](https://github.com/mae47/Red_Sea_LGM/tree/main/Scripts/abc_plot_sumstats_nd.r) plots the observed/calculated between population pairwise pi over the range of simulated between population pairwise pi values, to check that the simulated data covers the observed data
+
 ## 2. Shark model selection
 
 ## 3. Power analysis for model selection
