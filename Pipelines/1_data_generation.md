@@ -1,4 +1,8 @@
-## 1. Demultiplexing raw fastq.gz files
+### Observed Data
+
+## Steps 1 -2 RADseq data only. Steps 3 - 4 RADseq teleost data and target capture shark data
+
+## 1. Demultiplexing raw fastq.gz files (RADseq only)
 
 * Used process_radtags: https://catchenlab.life.illinois.edu/stacks/comp/process_radtags.php
 
@@ -17,7 +21,7 @@ process_radtags -p filepath/raw_data/ -o filepath/clean_data/ --renz_1 sphI --re
 
 * Remove unwanted samples from clean_data. Popmap files for all 4 species can be found here: [popmap_files](https://github.com/mae47/Red_Sea_LGM/tree/main/data/popmap_files)
 
-## 2. Assemble de-novo loci
+## 2. Assemble de-novo loci (RADseq only)
 
 * Based on the ‘denovo_map.pl’ pipeline: https://catchenlab.life.illinois.edu/stacks/comp/denovo_map.php
 
@@ -65,6 +69,8 @@ Teleosts, some missing data: [nd_from_vcf_haploid_md.sh](https://github.com/mae4
 * Creates a genotype table from diploid vcf and popmap. Generates SFS not accounting for missing data (already filtered out of shark target gene capture data) or imputing ONLY the missing data. Folds SFS. Plots SFS. Writes to .dadi format. Previously calculated between-pop nucleotide diversity is manually added if required. Then removes/cuts unwanted columns of the MAF table from the folded .dadi file, as well as monomorphic sites
 
 [2d-sfs_13112022_cut.Rmd](https://github.com/mae47/Red_Sea_LGM/tree/main/Scripts/2d-sfs_13112022_cut.Rmd)
+
+### Simulated Data
 
 ## 5. Model simulations
 
