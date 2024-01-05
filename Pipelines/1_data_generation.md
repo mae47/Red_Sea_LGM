@@ -33,9 +33,7 @@ ustacks -m = 3, minimum depth of coverage to create a stack
 ustacks –N = 5 ('M' + 2), maximum number of mismatches allowed to align secondary reads to primary stacks  
 cstacks -n = 2, maximum number of mismatches allowed between stacks between individuals
 
-* STOPPED at tsv2bam step. Resulting bam files were filtered for a minimum coverage of eight using samtools v.1.9 (Danecek et al., 2021)
-
-* [process_bam_files_8cov.sh](https://github.com/mae47/Red_Sea_LGM/tree/main/Scripts/process_bam_files_8cov.sh)
+* STOPPED at tsv2bam step. Resulting bam files were filtered for a minimum coverage of eight using samtools v.1.9 (Danecek et al., 2021): [process_bam_files_8cov.sh](https://github.com/mae47/Red_Sea_LGM/tree/main/Scripts/process_bam_files_8cov.sh)
 
 * Continued with the ‘gstacks’ and ‘populations’ components of the ‘denovo_map.pl’ pipeline: [denovo_assembly_manual.sh](https://github.com/mae47/Red_Sea_LGM/tree/main/Scripts/denovo_assembly_manual.sh)
 
@@ -58,7 +56,7 @@ Teleosts, some missing data: [nd_from_vcf_haploid_md.sh](https://github.com/mae4
 
 * 2nd script - uses pairwise_pi.dist file to calculate within pop1 nd, within pop2 nd, between pop nd, and Fst
 
-[calculate_obs_data_sumstats_plink_haploid.sh](https://github.com/mae47/Red_Sea_LGM/tree/main/Scripts/calculate_obs_data_sumstats_plink_haploid.sh)
+[calculate_obs_data_sumstats_plink_haploid.r](https://github.com/mae47/Red_Sea_LGM/tree/main/Scripts/calculate_obs_data_sumstats_plink_haploid.r)
 
 ## 4. Calculating 2D SFS from vcf (and appending between pop nucleotide diversity)
 
