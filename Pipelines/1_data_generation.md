@@ -49,14 +49,14 @@ Options for 'populations'
 
 ## 3. Calculating observed nucleotide diversity from vcf
 
-* First, these scripts treat alleles as haploid individuals, to match later simulations which will be haploid individuals
+* 1st scripts -  these scripts treat alleles as haploid individuals, to match later simulations which will be haploid individuals
 
 Sharks, no missing data: [nd_from_vcf_haploid.sh](https://github.com/mae47/Red_Sea_LGM/tree/main/Scripts/nd_from_vcf_haploid.sh)  
 Teleosts, some missing data: [nd_from_vcf_haploid_md.sh](https://github.com/mae47/Red_Sea_LGM/tree/main/Scripts/nd_from_vcf_haploid_md.sh)
 
 * Output files named "pairwise_pi.dist"
 
-* 2nd script uses pairwise_pi.dist file to calculate within pop1 nd, within pop2 nd, between pop nd, and Fst
+* 2nd script - uses pairwise_pi.dist file to calculate within pop1 nd, within pop2 nd, between pop nd, and Fst
 
 [calculate_obs_data_sumstats_plink_haploid.sh](https://github.com/mae47/Red_Sea_LGM/tree/main/Scripts/calculate_obs_data_sumstats_plink_haploid.sh)
 
@@ -70,7 +70,32 @@ Teleosts, some missing data: [nd_from_vcf_haploid_md.sh](https://github.com/mae4
 
 # Simulated Data
 
-## 5. Model simulations
+## 5. Generating model simulations
+
+* See the readme.txt file in the root folder for instructions on file structure, which files vary between species (number of loci etc), how to check all the editable parameters, and the order of submission of scripts
+
+* Though varying in sample sizes and number/length of loci, the three teleost species - Dascyllus abudafur, Dascyllus trimaculatus, and Pomacanthus maculosus - had the same parameter priors. Carcharhinus melanopterus had different priors (in the .tpl file) for a few of the parameters.
+
+* The two Dascyllus species simulations were run using an array job with 500 folders and 20 simulations per folder. Due to time constraints, P. maculosus simulations were run using an array job with 1000 folders and only 10 simulations per folder. See the readme.txt file for where to change the number of folders and the number of sims in each folder.
+
+* Basic order of submission:
+
+    root > script > create_multiple_folders.sh
+    root > array job submission file
+    root > script > mege_all_sfs_def.r
+
+* Simulation folders for each species can be found below:
+
+(Dascyllus_abudafur)
+(Dascyllus trimaculatus)
+(Pomacanthus maculosus)
+(Carcharhinus maculosus)
+
+## 6. Completed 10k simulation datasets
+
+* 2D SFS only
+
+* 2D SFS with appended nucleotide diversity 
 
 
 
