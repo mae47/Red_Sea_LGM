@@ -80,8 +80,8 @@ Teleosts, some missing data: [nd_from_vcf_haploid_md.sh](https://github.com/mae4
 
 * Basic order of submission:
 
-    root > script > create_multiple_folders.sh
-    root > array job submission file
+    root > script > create_multiple_folders.sh  
+    root > array job submission file  
     root > script > mege_all_sfs_def.r
 
 * Template simulation folders for each species can be found (here)[https://github.com/mae47/Red_Sea_LGM/tree/main/Scripts/simulations]
