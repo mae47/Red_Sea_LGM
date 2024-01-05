@@ -73,7 +73,7 @@ Teleosts, some missing data: [nd_from_vcf_haploid_md.sh](https://github.com/mae4
 
 [2d-sfs_13112022_cut.Rmd](https://github.com/mae47/Red_Sea_LGM/tree/main/Scripts/2d-sfs_13112022_cut.Rmd)
 
-* Completed 2D SFS in dadi format for each species can be found here in [targets](https://github.com/mae47/Red_Sea_LGM/tree/main/data/targets)
+* Completed 2D SFS in dadi format for each species can be found in [targets](https://github.com/mae47/Red_Sea_LGM/tree/main/data/targets)
 
 # Simulated Data
 
