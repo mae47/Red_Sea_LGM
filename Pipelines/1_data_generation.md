@@ -65,13 +65,15 @@ Teleosts, some missing data: [nd_from_vcf_haploid_md.sh](https://github.com/mae4
   Pm: 0.00274512082462963  
   Cm: 0.000590645546173469
 
-## 4. Calculating 2D SFS from vcf (and appending between pop nucleotide diversity)
+## 4. Calculating 2D SFS from vcf
 
 * Adapted from function vcf2sfs
 
-* Creates a genotype table from diploid vcf and popmap. Generates SFS not accounting for missing data (already filtered out of shark target gene capture data) or imputing ONLY the missing data. Folds SFS. Plots SFS. Writes to .dadi format. Previously calculated between-pop nucleotide diversity is manually added if required. Then removes/cuts unwanted columns of the MAF table from the folded .dadi file, as well as monomorphic sites
+* Creates a genotype table from diploid vcf and popmap. Generates SFS not accounting for missing data (already filtered out of shark target gene capture data) or imputing ONLY the missing data. Folds SFS. Plots SFS. Writes to .dadi format. Then removes/cuts unwanted columns of the MAF table from the folded .dadi file, as well as monomorphic sites
 
 [2d-sfs_13112022_cut.Rmd](https://github.com/mae47/Red_Sea_LGM/tree/main/Scripts/2d-sfs_13112022_cut.Rmd)
+
+* Completed 2D SFS in dadi format for each species can be found here in [targets](https://github.com/mae47/Red_Sea_LGM/tree/main/data/targets)
 
 # Simulated Data
 
