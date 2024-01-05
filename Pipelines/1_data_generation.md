@@ -58,6 +58,13 @@ Teleosts, some missing data: [nd_from_vcf_haploid_md.sh](https://github.com/mae4
 
 [calculate_obs_data_sumstats_plink_haploid.r](https://github.com/mae47/Red_Sea_LGM/tree/main/Scripts/calculate_obs_data_sumstats_plink_haploid.r)
 
+* Between population nucleotide diversities:
+
+  Da: 0.005483947242  
+  Dt: 0.00481223175259259  
+  Pm: 0.00274512082462963  
+  Cm: 0.000590645546173469
+
 ## 4. Calculating 2D SFS from vcf (and appending between pop nucleotide diversity)
 
 * Adapted from function vcf2sfs
