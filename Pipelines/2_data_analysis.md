@@ -24,6 +24,16 @@
 
 ## 4. Parameter estimation
 
+* [15 scripts](https://github.com/mae47/Red_Sea_LGM/tree/main/Scripts/parameter_estimation) to save out environments for posterior distribution for each of the (15) estimated parameters, plus a [submission file](https://github.com/mae47/Red_Sea_LGM/tree/main/Scripts/parameter_estimation/env_submission_file) to run them in parallel as an array job. There needs to be an empty 'environments' folder created as the destination folder.
+
+* Included scritps are for D. abudafur. Change species name to run them for each species.
+
+* Scripts require [10k simulated datasets](https://github.com/mae47/Red_Sea_LGM/tree/main/data/10k_siulated_datasets) including 2D SFS and def file, and the [target](https://github.com/mae47/Red_Sea_LGM/tree/main/data/targets) for each species.
+
+* There are two scripts for plotting the posterior distributions; [one](https://github.com/mae47/Red_Sea_LGM/tree/main/Scripts/abcrf_param_est_plot.r) plots all 15 parameters alongside the priors (black for teleosts and grey for shark), and [the other](https://github.com/mae47/Red_Sea_LGM/tree/main/Scripts/abcrf_param_est_plot_filtered.r) plots only 9 parameters of interest, without the priors for ease of reading. The location of these scripts (root) should have a folder called 'environments' containing copied environment files for each parameter for each species as saved out in the first step. The parameter files need to be renamed to identify the species eg from gr_param_rf_11092023.RData to gr_param_rf_11092023_Da.r (or Dt,Pm or Cm). There also needs to be an empty 'output' folder.
+  
+* In addition to the pdf plot, an output table is also generated including the mean ("expectation") and median values, and 0.025 quantile ("quantiles1") and 0.975 quantile ("quantiles2"). The exception is for parameter "gr" where quantiles1 and quantiles2 are reversed due to the parameter being simulated backwards in time (negative growth) but plotted as positive growth from past to present since the bottleneck.
+
 ## 5. Power analysis for parameter estimation
 
 * power_analysis_in_R script for each species outputs a csv table with 95% coverage, the out-of-box (OOB) R2 value, median and mean R2 values for each of the 15 population parameters. It also outputs a pdf with plots of estimated vs simulated median and mean values for each parameter, with the axes scales roughly set to the range of possible values based on prior ranges.
