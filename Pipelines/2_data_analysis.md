@@ -18,7 +18,7 @@
 
 * Randomly sampled 1000 rows from the cosmo0_model simulated 2D SFS dataset, and used abcrf package with 1000 trees to predict if these rows would be assigned to the correct (cosmo0_model) dataset.
 
-* Outputs a table "model_selection_summary_11092023.csv" with the number of pods (/1000) assigned to each model (cosm0_model or cosmo2_model) with different degrees of confidence (eg 95% of trees, 90% of trees, 80% of trees etc.)
+* Outputs a csv table with the number of pods (/1000) assigned to each model (cosm0_model or cosmo2_model) with different degrees of confidence (eg 95% of trees, 90% of trees, 80% of trees etc.)
 
 * The script [power_analysis_ms_in_R.r](https://github.com/mae47/Red_Sea_LGM/tree/main/Scripts/power_analysis_ms_in_R.r) utilises the 10k simulated datasets for the two models for C. melanopterus found [here](https://github.com/mae47/Red_Sea_LGM/tree/main/data/10k_simulated_datasets/C_melanopterus)
 
