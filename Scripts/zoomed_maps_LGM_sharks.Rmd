@@ -1,0 +1,797 @@
+---
+title: "Red_Sea_sf_maps"
+author: "EFM"
+date: "05/07/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+#knitr::opts_chunk$set(echo = TRUE, fig.width=40)
+#knitr::knit_exit()
+```
+
+***
+## The region of interest
+
+Libraries needed for this section
+
+```{r}
+library("ggplot2")
+theme_set(theme_bw())
+library("sf")
+library("rgdal")
+library("rgeos")
+library("sf")
+library("rnaturalearth")
+library("rnaturalearthdata")
+library("ggspatial")
+```
+
+First step is to find the broad region that we want to plot
+
+The package `rnaturalearth` provides a map of countries of the entire world. Use `ne_countries` to pull country data and choose the scale (`rnaturalearthhires` is necessary for scale = "large"). The function can return sp classes (default) or directly sf classes, as defined in the argument `returnclass`:
+```{r}
+world <- ne_countries(scale = "medium", returnclass = "sf")
+```
+
+Plotting the whole world would give this
+
+```{r}
+ggplot(world) + 
+  geom_sf()+
+  coord_sf(expand = FALSE)+
+  xlab("Longitude") + 
+  ylab("Latitude")
+```
+
+You can check for probmlematic polygons with tbe below code. 
+These make messy plots and need to be sorted before you can plot the map.
+```{r}
+table(st_is_valid(world))
+```
+
+There was a problematic polygon. We can fix it with `st_make_valid`:
+```{r}
+world <-st_make_valid(world)
+table(st_is_valid(world))
+```
+
+
+We create a small `st` object with two points marking two opposite corners of our desired plot, and set its `crs` to standard lat long coordinates. We then project its coordinates, and get the bounding box which are the values that we need as limits for our plot.
+
+Also We will be using the Albers Equal Area projection, which covers well areas at mid-latitudes, potentially with a large east to west span.
+for the projection both.  
+
+The `proj4` code for this projection is `+proj=aea +lat_1=20 +lat_2=60 +lat_0=40 +lon_0=-96 +datum=NAD83 +units=km +no_defs` (these numbers here are the standard setting for AEA for the USA). 
+
+The first element gives the type of projection (`aea`, which is Albers Equal Area). We then have the standard parallers within which distortion is minimized, 'lat_1' and 'lat_2'; the "one-sixth rule" places the first standard parallel at one-sixth the range above the southern boundary and the second standard parallel minus one-sixth the range below the northern limit. We then have the parallel of observation, 'lat'; dosen't seem to be any clear advice on how to choose it, probably best to put in in the middle of the standard parallels). We then have the meridian on which the projection will be centered ('lon'). 
+
+The datum used for the projection will depend on the type of projection, you probably dont need to worry about this as for Albers Equal Area, we use `+datum=NAD83`. The units defines the units used for the projection; meters are commonly found in standard strings for projections, but if you are working on large areas, km are more practical to avoid very large numbers. The `+no_defs` is an old option from the proj4 library (which we use for projections) was used to ensure that no settings were overriden by the default files; it is now the standard behaviour and it is not needed, but you will find often still find it in proj4 strings used in examples and papers. A full list of parameters for the `+proj` string can be foudn here: https://proj.org/usage/projections.html. 
+
+```{r}
+# this is laid out (x,y), (x,y)
+# so long between 15 and 90; and lat between -40 and 50
+corners_raw<-st_sf(corners = 1:2, geom = st_sfc(st_point(c(15,-40)), st_point(c(90,50))), crs = "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0")
+#lat_1 = 1/6th above the bottom = 90/6=15, -40+15=-25
+#lat_2 = 1/6th below top = 90/6=15, 50-15=35
+#lat_0 = middle of the range = median(-40:50) 
+#lon_0 = middle of the range = mean(15:90) 
+aea_proj<-"+proj=aea +lat_1=-25 +lat_2=35 +lat_0=5 +lon_0=52.5 +datum=NAD83 +units=km +no_defs"
+bbox_proj<-st_bbox(st_transform(corners_raw,crs=aea_proj))
+bbox_proj
+```
+     xmin      ymin      xmax      ymax 
+-3859.743 -5084.166  3347.053  5262.539 
+
+
+We can now use these values for our plot
+N.B. you want this to be wider than your final plot in case you need to tweak 
+the region you are lookinng at and to be sure you get 'fancy-background-map' to
+all the edges of your final plot - more of an issue at higher latitudes where the
+world has more of a curve on it.
+```{r}
+ggplot(data = world) +
+  geom_sf() +
+  coord_sf(xlim = c(bbox_proj$xmin, bbox_proj$xmax), ylim = c(bbox_proj$ymin, bbox_proj$ymax), expand = FALSE,
+           crs=aea_proj)
+```
+
+This region looks okay for now so the next step is to build the colourful base map
+for this area
+
+***
+## The base etopo map
+
+Some more libraries
+```{r}
+library(rasterVis)
+library(marmap)
+library(gdalUtils)
+library(raster)
+library(graticule)
+library(terra)
+library(tmaptools)
+```
+
+
+First step is to creat a raster of the correct extent  
+
+
+We use a full ETOPO1 dataset downloaded from https://www.ngdc.noaa.gov/mgg/global/relief/ETOPO1/data/ice_surface/grid_registered/netcdf/
+We will use the cell registered version, so that the extent of the raster start 
+on a nice even number. Read in the dataset (in reality, with `raster`, we don't 
+read data in memory, just open a connection)
+```{r}
+#etopo_path<-"../../../topography/ETOPO1_Ice_g_gmt4.grd"
+
+#please excuse the local path and set to your own or use the relative path above
+etopo_path<-"/home/maddie/Documents/PhD/LGM_paper/new_plots/map/ETOPO1_Ice_g_gmt4.grd"
+etopo1<-raster::raster(etopo_path,varname="z")
+```
+
+Need to create a target `raster` that we will use to crop `etopo` for that region.
+
+Here we build the colours needed for the map.
+```{r}
+etopo_colour_scale<-function(x){
+# these colours and breaks are from the source code of marmap::scale_fill_etopo
+etopo <- read.csv(textConnection(
+"altitudes,colours
+10000,#FBFBFB
+4000,#864747
+3900,#7E4B11
+2000,#9B8411
+1900,#BD8D15
+300,#F0CF9F
+0,#307424
+-1,#AFDCF4
+-12000,#090B6A
+"
+), stringsAsFactors=FALSE)
+etopo_ramp_function<-scales::gradient_n_pal(colours=etopo$colours,values=scales::rescale(etopo$altitudes))
+etopo_ramp_function(scales::rescale(x,from=range(etopo$altitudes)))
+}
+```
+
+
+In the previous section we decided on lat longs of a bounding box (plot limits). 
+That was long between 15 and 90; and lat between -40 and 50.
+We now need to create a target `raster` that we will use to crop `etopo`. 
+We have to be careful to match the resolution of our target to the exisiting etopo map.
+
+```{r}
+redsea_raw<-raster(xmn=15,xmx=90,ymn=-40,ymx=50,resolution=res(etopo1))
+redsea_raw<-crop(etopo1,redsea_raw)
+crs(redsea_raw)<-"+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0"
+writeRaster(redsea_raw,"./output/redsea_raw.nc",overwrite=TRUE,format="CDF")
+rm(redsea_raw)
+```
+
+Now project to Albers equal area:
+```{r}
+gdalwarp(srcfile="./output/redsea_raw.nc",dstfile="./output/redsea_proj",s_srs="+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0",
+t_srs="+proj=aea +lat_1=-25 +lat_2=35 +lat_0=5 +lon_0=52.5 +datum=NAD83 +units=km +no_defs",tr=c(0.5,0.5),overwrite=T)
+```
+
+
+Subset the raster 
+```{r}
+raster::raster("./output/redsea_proj")->redsea_proj
+redsea_proj_crop<-raster(xmn=-3200, xmx=3300, ymn=-5000, ymx=4800,resolution=res(redsea_proj))
+crs(redsea_proj_crop)<-crs(redsea_proj)
+redsea_proj_crop<-crop(redsea_proj,redsea_proj_crop)
+```
+
+Now plot it
+```{r}
+# Notice `g`plot (from rasterVis) and not `gg`plot
+gplot(redsea_proj_crop, maxpixels=10^6) + 
+  geom_raster(aes(fill = value)) +
+  scale_fill_etopo()+
+  # remove margins
+  scale_x_continuous(expand=c(0,0)) +
+  scale_y_continuous(expand=c(0,0))
+```
+
+
+
+We can aggregate it (to make it easier to handle) without losing sharpness 
+- aiming for between 500k and 1M pixels
+Change the tr=c(,) values to affect the number of pixels. tr = target resolution
+te=c needs to match the raster subset above
+```{r}
+gdalUtils::gdalwarp(srcfile="./output/redsea_proj",dstfile="./output/redsea_proj_crop2",tr=c(9,9), te=c(-3200,-5000,3300,4800),overwrite = T)
+
+redsea_proj_crop2_alt<-raster::raster("./output/redsea_proj_crop2")
+```
+
+
+Check the pixel number (ncell) and adjust target resolution (tr) 
+```{r}
+redsea_proj_crop2_alt
+```
+
+Looks good so we can run with this
+
+In order to plot with ggplot need to 'fortify' the data to 
+turn it into a df
+```{r}
+redsea_fortified<-raster::as.data.frame(redsea_proj_crop2_alt,xy=TRUE)
+names(redsea_fortified)<-c("long","lat","elevation")
+```
+
+Set which graticules we want to plot (in this case, every 10 degrees for both 
+lat and long) and plot the map
+In the previous section we decided on lat longs of a bounding box (plot limits). 
+That was long between 15 and 90; and lat between -40 and 50.
+grat_crop wider than lat/long range
+```{r}
+prj<-crs(redsea_proj_crop2_alt)
+plot_extent<-extent(redsea_proj_crop2_alt)
+prj_char_string<-"+proj=aea +lat_1=-25 +lat_2=35 +lat_0=5 +lon_0=52.5 +datum=NAD83 +units=km +no_defs"
+grat<-list(lon=seq(10,100,by=10),lat=seq(-50,80,by=10))
+grat=sf::st_graticule(lon=grat$lon, lat=grat$lat, col="lightgray", ndiscr=100000)
+grat_crop<-sf::st_crop(grat,y=c(xmin=15,xmax=90,ymin=-40,ymax=50))
+grat_proj <- sf::st_transform(grat_crop, prj_char_string)
+grat_proj_crop <- sf::st_crop(grat_proj,y=plot_extent)
+
+
+ggplot() + 
+  geom_raster(data=subset(redsea_fortified),aes(x=long, y=lat,fill = elevation)) +
+  scale_fill_etopo()+  
+  geom_sf(data=grat_proj_crop, col='lightgrey', size=0.2)+
+  geom_contour(data=redsea_fortified,aes(x=long, y=lat,z=elevation),
+               breaks=c(0), colour="black", size=0.2)+
+  coord_sf(expand=FALSE,crs=prj,xlim=plot_extent[1:2],ylim=plot_extent[3:4])+
+  scale_x_continuous(breaks =grat$lon)+
+  scale_y_continuous(breaks=grat$lat)
+```
+
+Add the sample locations.
+
+read in the samples file
+```{r}
+sample_locations <- read.csv("/home/maddie/Documents/PhD/LGM_paper/new_plots/map/IP_sample_sites_coord_LGM_sharks.csv",sep = ',')
+```
+
+build individual sample sets
+```{r}
+# What spp are there?
+unique(sample_locations$sp)
+
+# these are with raw lat long values 
+GoA_Pm <- sample_locations[1,]
+GoA_Da <- sample_locations[2,]
+Eilat_Dt <- sample_locations[3,]
+Burcan_Dt <- sample_locations[4,]
+Burcan_Da <- sample_locations[5,]
+Burcan_Pm <- sample_locations[6,]
+Fahal_Pm <- sample_locations[7,]
+Shosha_Pm <- sample_locations[8,]
+RS_Cm <- sample_locations[9,]
+Lamu_Pm <- sample_locations[10,]
+Mad_Da <- sample_locations[11,]
+Sey_Cm <- sample_locations[12,]
+Peros_Dt  <- sample_locations[13,]
+Chagos_Dt  <- sample_locations[14,]
+Salomon_Dt <- sample_locations[15,]
+Diego_Dt <- sample_locations[16,]
+```
+
+project those sample locations so that they match the base map
+```{r}
+# project so that they have an sf geometry
+GoA_Pm <- st_as_sf(x=GoA_Pm, coords = c("long", "lat"), 
+    crs = "+proj=longlat +datum=WGS84 +towgs84=0,0,0")
+GoA_Da <- st_as_sf(x=GoA_Da, coords = c("long", "lat"), 
+    crs = "+proj=longlat +datum=WGS84 +towgs84=0,0,0")
+Eilat_Dt <- st_as_sf(x=Eilat_Dt, coords = c("long", "lat"), 
+    crs = "+proj=longlat +datum=WGS84 +towgs84=0,0,0")
+Burcan_Dt <- st_as_sf(x=Burcan_Dt, coords = c("long", "lat"), 
+    crs = "+proj=longlat +datum=WGS84 +towgs84=0,0,0")
+Burcan_Da <- st_as_sf(x=Burcan_Da, coords = c("long", "lat"), 
+    crs = "+proj=longlat +datum=WGS84 +towgs84=0,0,0")
+Burcan_Pm <- st_as_sf(x=Burcan_Pm, coords = c("long", "lat"), 
+    crs = "+proj=longlat +datum=WGS84 +towgs84=0,0,0")
+Fahal_Pm <- st_as_sf(x=Fahal_Pm, coords = c("long", "lat"), 
+    crs = "+proj=longlat +datum=WGS84 +towgs84=0,0,0")
+Shosha_Pm <- st_as_sf(x=Shosha_Pm, coords = c("long", "lat"), 
+    crs = "+proj=longlat +datum=WGS84 +towgs84=0,0,0")
+RS_Cm <- st_as_sf(x=RS_Cm, coords = c("long", "lat"), 
+    crs = "+proj=longlat +datum=WGS84 +towgs84=0,0,0")
+Lamu_Pm <- st_as_sf(x=Lamu_Pm, coords = c("long", "lat"), 
+    crs = "+proj=longlat +datum=WGS84 +towgs84=0,0,0")
+Mad_Da <- st_as_sf(x=Mad_Da, coords = c("long", "lat"), 
+    crs = "+proj=longlat +datum=WGS84 +towgs84=0,0,0")
+Sey_Cm <- st_as_sf(x=Sey_Cm, coords = c("long", "lat"), 
+    crs = "+proj=longlat +datum=WGS84 +towgs84=0,0,0")
+Peros_Dt <- st_as_sf(x=Peros_Dt, coords = c("long", "lat"), 
+    crs = "+proj=longlat +datum=WGS84 +towgs84=0,0,0")
+Chagos_Dt <- st_as_sf(x=Chagos_Dt, coords = c("long", "lat"), 
+    crs = "+proj=longlat +datum=WGS84 +towgs84=0,0,0")
+Salomon_Dt <- st_as_sf(x=Salomon_Dt, coords = c("long", "lat"), 
+    crs = "+proj=longlat +datum=WGS84 +towgs84=0,0,0")
+Diego_Dt <- st_as_sf(x=Diego_Dt, coords = c("long", "lat"), 
+    crs = "+proj=longlat +datum=WGS84 +towgs84=0,0,0")
+
+
+
+# give the specific projection in use for this map
+GoA_Pm_proj <- sf::st_transform(GoA_Pm$geometry,crs=prj)
+GoA_Da_proj<- sf::st_transform(GoA_Da$geometry,crs=prj)
+Eilat_Dt_proj<- sf::st_transform(Eilat_Dt$geometry,crs=prj)
+Burcan_Dt_proj<- sf::st_transform(Burcan_Dt$geometry,crs=prj)
+Burcan_Da_proj<- sf::st_transform(Burcan_Da$geometry,crs=prj)
+Burcan_Pm_proj<- sf::st_transform(Burcan_Pm$geometry,crs=prj)
+Fahal_Pm_proj<- sf::st_transform(Fahal_Pm$geometry,crs=prj)
+Shosha_Pm_proj<- sf::st_transform(Shosha_Pm$geometry,crs=prj)
+RS_Cm_proj<- sf::st_transform(RS_Cm$geometry,crs=prj)
+Lamu_Pm_proj<- sf::st_transform(Lamu_Pm$geometry,crs=prj)
+Mad_Da_proj<- sf::st_transform(Mad_Da$geometry,crs=prj)
+Sey_Cm_proj <- sf::st_transform(Sey_Cm$geometry,crs=prj)
+Peros_Dt_proj <- sf::st_transform(Peros_Dt$geometry,crs=prj)
+Chagos_Dt_proj <- sf::st_transform(Chagos_Dt$geometry,crs=prj)
+Salomon_Dt_proj <- sf::st_transform(Salomon_Dt$geometry,crs=prj)
+Diego_Dt_proj<- sf::st_transform(Diego_Dt$geometry,crs=prj)
+
+```
+
+Plot with sample sites. Here adjust shape, size and colour of site markers
+```{r}
+redsea_IO_plot <-
+  ggplot() + 
+  geom_raster(data=subset(redsea_fortified),aes(x=long, y=lat,fill = elevation)) +
+  scale_fill_etopo()+  
+  geom_sf(data=grat_proj_crop, col='lightgrey', size=0.2)+
+  geom_contour(data=redsea_fortified,aes(x=long, y=lat,z=elevation),
+               breaks=c(0), colour="black", size=0.2)+
+  # add samples
+  # colour codes here have 80 added on the end of them, that is an alpha value and affects transparancy
+  
+  ggplot2::geom_sf(data = GoA_Da_proj, shape = 21, size = 4.667, colour = "#CC79A9", fill="#CC79A780", stroke=1) +
+  ggplot2::geom_sf(data = Burcan_Da_proj, shape = 21, size = 5.333, colour = "#CC79A9", fill="#CC79A780", stroke=1) + 
+  ggplot2::geom_sf(data = Eilat_Dt_proj, shape = 21, size = 4, colour = "#E69F02", fill="#E69F0080", stroke=1) + 
+  ggplot2::geom_sf(data = Burcan_Dt_proj, shape = 21, size = 2, colour = "#E69F02", fill="#E69F0080", stroke=1) + 
+  ggplot2::geom_sf(data = GoA_Pm_proj, shape = 21, size = 1.333, colour = "#009E75", fill="#009E7380", stroke=0.5) +
+  ggplot2::geom_sf(data = Burcan_Pm_proj, shape = 21, size = 0.667, colour = "#009E75", fill="#009E7380", stroke=0.5) + 
+  ggplot2::geom_sf(data = RS_Cm_proj, shape = 21, size = 9.333, colour = "#529EFF", fill="#00A5FF80", stroke=1) + 
+  ggplot2::geom_sf(data = Fahal_Pm_proj, shape = 21, size = 6, colour = "#009E75", fill="#009E7380", stroke=1) +
+  ggplot2::geom_sf(data = Shosha_Pm_proj, shape = 21, size = 2, colour = "#009E75", fill="#009E7380", stroke=1) + 
+  ggplot2::geom_sf(data = Lamu_Pm_proj, shape = 21, size = 6, colour = "#009E75", fill="#009E7380", stroke=1) +
+  ggplot2::geom_sf(data = Mad_Da_proj, shape = 21, size = 10, colour = "#CC79A9", fill="#CC79A780", stroke=1) + 
+  ggplot2::geom_sf(data = Sey_Cm_proj, shape = 21, size = 9.333, colour = "#529EFF", fill="#00A5FF80", stroke=1) + 
+  ggplot2::geom_sf(data = Peros_Dt_proj, shape = 21, size = 0.667, colour = "#E69F02", fill="#E69F0080", stroke=1) +
+  ggplot2::geom_sf(data = Chagos_Dt_proj, shape = 21, size = 6, colour = "#E69F02", fill="#E69F0080", stroke=1) + 
+  ggplot2::geom_sf(data = Salomon_Dt_proj, shape = 21, size = 2.667, colour = "#E69F02", fill="#E69F0080", stroke=1) + 
+  ggplot2::geom_sf(data = Diego_Dt_proj, shape = 21, size = 0.667, colour = "#E69F02", fill="#E69F0080", stroke=1) +
+  
+  coord_sf(expand=FALSE,crs=prj,xlim=plot_extent[1:2],ylim=plot_extent[3:4])+
+  scale_x_continuous(breaks =grat$lon)+
+  scale_y_continuous(breaks=grat$lat)+
+  #text sizes
+  theme(axis.text=element_text(size=7),axis.title=element_text(size=9),legend.text=element_text(size=7),legend.title=element_text(size=9),plot.margin=unit(c(1,0,1,0.2),"cm"))+
+  #Legend title
+  labs(fill="elevation (m)")+
+  #Scale bar
+  annotation_scale(style="ticks")
+
+redsea_IO_plot
+
+plot_ratio <- get_asp_ratio(Chagos_Dt_proj)
+ggsave("/home/maddie/Documents/PhD/LGM_paper/new_plots/map/output/redsea_IO_LGM_sharks.png",plot=redsea_IO_plot,width=plot_ratio*5,height=5)
+
+```
+Looks like you will need to jitter those points so that they can all be seen
+if presenting them on a map at this scale becaue the overlap is a LOT, even 
+with the transparancy.
+
+***
+
+## Zoomed in window - red sea
+
+We need to start the process over again at this point basically!
+
+```{r}
+world <- ne_countries(scale = "medium", returnclass = "sf")
+world <-st_make_valid(world)
+```
+
+Work out the projection
+```{r}
+# this is laid out (x,y), (x,y)
+# so long between 20 and 50; and lat between 15 and 35
+corners_raw<-st_sf(corners = 1:2, geom = st_sfc(st_point(c(20,15)), st_point(c(50,35))), crs = "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0")
+#lat_1 = 1/6th above the bottom = 50/6=8.3, 15+8.3=23.3
+#lat_2 = 1/6th below top = 50/6=8.3, 35-8.3=26.7
+#lat_0 = middle of the range = mean(15:35) 
+#lon_0 = middle of the range = mean(20:50) 
+aea_proj<-"+proj=aea +lat_1=23.3 +lat_2=26.7 +lat_0=25 +lon_0=35 +datum=NAD83 +units=km +no_defs"
+bbox_proj<-st_bbox(st_transform(corners_raw,crs=aea_proj))
+bbox_proj
+```
+     xmin      ymin      xmax      ymax 
+-1632.160 -1011.919  1388.760  1179.953 
+
+
+
+We can now use these values for our plot
+N.B. you want this to be wider than your final plot in case you need to tweak 
+the region you are lookinng at and to be sure you get 'fancy-background-map' to
+all the edges of your final plot - more of an issue at higher latitudes where the
+world has more of a curve on it.
+```{r}
+ggplot(data = world) +
+  geom_sf() +
+  coord_sf(xlim = c(bbox_proj$xmin, bbox_proj$xmax), ylim = c(bbox_proj$ymin, bbox_proj$ymax), expand = FALSE,
+           crs=aea_proj)
+```
+
+
+In the previous section we decided on lat longs of a bounding box (plot limits). 
+That was long between 25 and 50; and lat between 15 and 35.
+We now need to create a target `raster` that we will use to crop `etopo`. 
+We have to be careful to match the resolution of our target to the exisiting etopo map.
+```{r}
+redsea_zoom_raw<-raster(xmn=20,xmx=50,ymn=15,ymx=35,resolution=res(etopo1))
+redsea_zoom_raw<-crop(etopo1,redsea_zoom_raw)
+crs(redsea_zoom_raw)<-"+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0"
+writeRaster(redsea_zoom_raw,"./output/redsea_zoom_raw.nc",overwrite=TRUE,format="CDF")
+rm(redsea_zoom_raw)
+```
+
+Now project to Albers equal area:
+```{r}
+gdalwarp(srcfile="./output/redsea_zoom_raw.nc",dstfile="./output/redsea_zoom_proj",s_srs="+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0",
+t_srs="+proj=aea +lat_1=23.3 +lat_2=26.7 +lat_0=25 +lon_0=35 +datum=NAD83 +units=km +no_defs",tr=c(0.5,0.5),overwrite=T)
+```    
+ 
+
+
+Subset the raster 
+```{r}
+raster::raster("./output/redsea_zoom_proj")->redsea_zoom_proj
+redsea_zoom_proj_crop<-raster(xmn=-400, xmx=700, ymn=-600, ymx=800,resolution=res(redsea_zoom_proj))
+crs(redsea_zoom_proj_crop)<-crs(redsea_zoom_proj)
+redsea_zoom_proj_crop<-crop(redsea_zoom_proj,redsea_zoom_proj_crop)
+```
+
+Now plot it
+```{r}
+# Notice `g`plot (from rasterVis) and not `gg`plot
+gplot(redsea_zoom_proj_crop, maxpixels=10^6) + 
+  geom_raster(aes(fill = value)) +
+  scale_fill_etopo()+
+  # remove margins
+  scale_x_continuous(expand=c(0,0)) +
+  scale_y_continuous(expand=c(0,0))
+```
+
+
+
+We can aggregate it (to make it easier to handle) without losing sharpness 
+- aiming for between 500k and 1M pixels 
+small, no further than 3 by 3
+Change the tr=c(,) values to affect the number of pixels. tr = target resolution
+te=c needs to match the raster subset above
+```{r}
+gdalUtils::gdalwarp(srcfile="./output/redsea_zoom_proj",dstfile="./output/redsea_zoom_proj_crop2",tr=c(3,3), te=c(-400,-600,700,800),overwrite = T)
+
+redsea_zoom_proj_crop2_alt<-raster::raster("./output/redsea_zoom_proj_crop2")
+```
+
+
+Check the pixel number (ncell) and adjust target resolution (tr) 
+```{r}
+redsea_zoom_proj_crop2_alt
+```
+
+Looks good so we can run with this
+
+In order to plot with ggplot need to 'fortify' the data to 
+turn it into a df
+```{r}
+redsea_zoom_fortified<-raster::as.data.frame(redsea_zoom_proj_crop2_alt,xy=TRUE)
+names(redsea_zoom_fortified)<-c("long","lat","elevation")
+```
+
+
+Set which graticules we want to plot (in this case, every 10 degrees for both 
+lat and long) and plot the map
+In the previous section we decided on lat longs of a bounding box (plot limits). 
+That was long between 20 and 50; and lat between 15 and 35.
+grat_crop wider than lat/long range
+```{r}
+prj<-crs(redsea_zoom_proj_crop2_alt)
+plot_extent<-extent(redsea_zoom_proj_crop2_alt)
+prj_char_string<-"+proj=aea +lat_1=23.3 +lat_2=26.7 +lat_0=25 +lon_0=35 +datum=NAD83 +units=km +no_defs"
+grat<-list(lon=seq(10,55,by=2),lat=seq(6,40,by=2))
+grat=sf::st_graticule(lon=grat$lon, lat=grat$lat, col="lightgray", ndiscr=100000)
+grat_crop<-sf::st_crop(grat,y=c(xmin=15,xmax=50,ymin=10,ymax=35))
+grat_proj <- sf::st_transform(grat_crop, prj_char_string)
+grat_proj_crop <- sf::st_crop(grat_proj,y=plot_extent)
+
+
+ggplot() + 
+  geom_raster(data=subset(redsea_zoom_fortified),aes(x=long, y=lat,fill = elevation)) +
+  scale_fill_etopo()+  
+  geom_sf(data=grat_proj_crop, col='lightgrey', size=0.2)+
+  geom_contour(data=redsea_zoom_fortified,aes(x=long, y=lat,z=elevation),
+               breaks=c(0), colour="black", size=0.2)+
+  coord_sf(expand=FALSE,crs=prj,xlim=plot_extent[1:2],ylim=plot_extent[3:4])+
+  scale_x_continuous(breaks =grat$lon)+
+  scale_y_continuous(breaks=grat$lat)
+```
+
+Add the samples
+
+```{r}
+#if didnt already do earlier:
+GoA_Pm <- st_as_sf(x=GoA_Pm, coords = c("long", "lat"), 
+    crs = "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0")
+GoA_Da <- st_as_sf(x=GoA_Da, coords = c("long", "lat"), 
+    crs = "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0")
+Eilat_Dt <- st_as_sf(x=Eilat_Dt, coords = c("long", "lat"), 
+    crs = "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0")
+Burcan_Dt <- st_as_sf(x=Burcan_Dt, coords = c("long", "lat"), 
+    crs = "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0")
+Burcan_Da <- st_as_sf(x=Burcan_Da, coords = c("long", "lat"), 
+    crs = "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0")
+Burcan_Pm <- st_as_sf(x=Burcan_Pm, coords = c("long", "lat"), 
+    crs = "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0")
+Fahal_Pm <- st_as_sf(x=Fahal_Pm, coords = c("long", "lat"), 
+    crs = "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0")
+Shosha_Pm <- st_as_sf(x=Shosha_Pm, coords = c("long", "lat"), 
+    crs = "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0")
+RS_Cm <- st_as_sf(x=RS_Cm, coords = c("long", "lat"), 
+    crs = "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0")
+
+
+# give the specific projection in use for this map
+GoA_Pm_proj <- sf::st_transform(GoA_Pm$geometry,crs=prj)
+GoA_Da_proj<- sf::st_transform(GoA_Da$geometry,crs=prj)
+Eilat_Dt_proj<- sf::st_transform(Eilat_Dt$geometry,crs=prj)
+Burcan_Dt_proj<- sf::st_transform(Burcan_Dt$geometry,crs=prj)
+Burcan_Da_proj<- sf::st_transform(Burcan_Da$geometry,crs=prj)
+Burcan_Pm_proj<- sf::st_transform(Burcan_Pm$geometry,crs=prj)
+Fahal_Pm_proj<- sf::st_transform(Fahal_Pm$geometry,crs=prj)
+Shosha_Pm_proj<- sf::st_transform(Shosha_Pm$geometry,crs=prj)
+RS_Cm_proj<- sf::st_transform(RS_Cm$geometry,crs=prj)
+
+
+```
+
+
+plot again
+```{r}
+redsea_zoom_plot <-
+  ggplot() + 
+  geom_raster(data=subset(redsea_zoom_fortified),aes(x=long, y=lat,fill = elevation)) +
+  scale_fill_etopo()+  
+  geom_sf(data=grat_proj_crop, col='lightgrey', size=0.2)+
+  geom_contour(data=redsea_zoom_fortified,aes(x=long, y=lat,z=elevation),
+               breaks=c(0), colour="black", size=0.2)+
+  # add samples
+  # colour codes here have 80 added on the end of them, that is an alpha value and affects transparancy
+  ggplot2::geom_sf(data = GoA_Da_proj, shape = 21, size = 4.667, colour = "#CC79A9", fill="#CC79A780", stroke=1) + 
+  ggplot2::geom_sf(data = GoA_Pm_proj, shape = 21, size = 1.333, colour = "#009E75", fill="#009E7380", stroke=1) + 
+  ggplot2::geom_sf(data = Burcan_Da_proj, shape = 21, size = 5.333, colour = "#CC79A9", fill="#CC79A780", stroke=1) + 
+  ggplot2::geom_sf(data = Burcan_Dt_proj, shape = 21, size = 2, colour = "#E69F02", fill="#E69F0080", stroke=1) + 
+  ggplot2::geom_sf(data = Burcan_Pm_proj, shape = 21, size = 0.667, colour = "#009E75", fill="#009E7380", stroke=1) + 
+  ggplot2::geom_sf(data = Eilat_Dt_proj, shape = 21, size = 4, colour = "#E69F02", fill="#E69F0080", stroke=1) +
+  ggplot2::geom_sf(data = RS_Cm_proj, shape = 21, size = 9.333, colour = "#529EFF", fill="#00A5FF80", stroke=1) + 
+  ggplot2::geom_sf(data = Fahal_Pm_proj, shape = 21, size = 6, colour = "#009E75", fill="#009E7380", stroke=1) +
+  ggplot2::geom_sf(data = Shosha_Pm_proj, shape = 21, size = 2, colour = "#009E75", fill="#009E7380", stroke=1) + 
+  
+  
+  coord_sf(expand=FALSE,crs=prj,xlim=plot_extent[1:2],ylim=plot_extent[3:4])+
+  scale_x_continuous(breaks =grat$lon)+
+  scale_y_continuous(breaks=grat$lat)+
+  #text sizes
+  theme(axis.text=element_text(size=7),axis.title=element_text(size=9),legend.text=element_text(size=7),legend.title=element_text(size=9),plot.margin=unit(c(0.2,0,0.1,0.2),"cm"))+
+  #Legend title
+  labs(fill="elevation (m)")+
+  #Scale bar
+  annotation_scale(style="ticks")
+
+redsea_zoom_plot
+
+plot_ratio <- get_asp_ratio(Chagos_Dt_proj)
+ggsave("/home/maddie/Documents/PhD/LGM_paper/new_plots/map/output/RS_zoom_LGM_sharks.png",plot=redsea_zoom_plot,height=plot_ratio*4,width=4)
+```
+
+Again - i think these points will need gittering, or possibly you have to zoom the map in more, not sure but this is a good start!
+
+***
+
+
+## Chagos zoom
+
+Annnndddd again...!
+
+
+```{r}
+world <- ne_countries(scale = "medium", returnclass = "sf")
+world <-st_make_valid(world)
+```
+
+Work out the projection
+```{r}
+# this is laid out (x,y), (x,y)
+# so long between 60 and 80; and lat between -15 and 5
+corners_raw<-st_sf(corners = 1:2, geom = st_sfc(st_point(c(60,-15)), st_point(c(80,5))), crs = "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0")
+#st_sfc(st_point(c(25,5)), st_point(c(65,40)))
+
+#lat_1 = 1/6th above the bottom = 80/6=13.3, -15+13.3=-1.7
+#lat_2 = 1/6th below top = 80/6=13.3, 5-13.3=-8.3
+#lat_0 = middle of the range = median(-15:5) 
+#lon_0 = middle of the range = mean(60:80) 
+aea_proj<-"+proj=aea +lat_1=8.4 +lat_2=-1.7 +lat_0=-5 +lon_0=70 +datum=NAD83 +units=km +no_defs"
+bbox_proj<-st_bbox(st_transform(corners_raw,crs=aea_proj))
+bbox_proj
+```
+     xmin      ymin      xmax      ymax 
+-1127.354 -1073.876  1105.141  1112.390
+
+
+Now use these values for our plot
+```{r}
+ggplot(data = world) +
+  geom_sf() +
+  coord_sf(xlim = c(bbox_proj$xmin, bbox_proj$xmax), ylim = c(bbox_proj$ymin, bbox_proj$ymax), expand = FALSE,
+           crs=aea_proj)
+```
+
+
+In the previous section we decided on lat longs of a bounding box (plot limits). 
+That was long between 60 and 80; and lat between -15 and 5.
+We now need to create a target `raster` that we will use to crop `etopo`. 
+We have to be careful to match the resolution of our target to the exisiting etopo map. 
+```{r}
+Chagos_zoom_raw<-raster(xmn=60,xmx=80,ymn=-15,ymx=5,resolution=res(etopo1))
+Chagos_zoom_raw<-crop(etopo1,Chagos_zoom_raw)
+crs(Chagos_zoom_raw)<-"+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0"
+writeRaster(Chagos_zoom_raw,"./output/Chagos_zoom_raw.nc",overwrite=TRUE,format="CDF")
+rm(Chagos_zoom_raw)
+```
+
+Now project to Albers equal area:
+```{r}
+gdalwarp(srcfile="./output/Chagos_zoom_raw.nc",dstfile="./output/Chagos_zoom_proj",s_srs="+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0",
+t_srs="+proj=aea +lat_1=8.4 +lat_2=-1.7 +lat_0=-5 +lon_0=70 +datum=NAD83 +units=km +no_defs",tr=c(0.5,0.5),overwrite=T)
+```  
+
+Subset the raster using those bbox values printed out earlier
+```{r}
+raster::raster("./output/Chagos_zoom_proj")->Chagos_zoom_proj
+Chagos_zoom_proj_crop<-raster(xmn=-100, xmx=600, ymn=-544, ymx=400, resolution=res(Chagos_zoom_proj))
+crs(Chagos_zoom_proj_crop)<-crs(Chagos_zoom_proj)
+Chagos_zoom_proj_crop<-crop(Chagos_zoom_proj,Chagos_zoom_proj_crop)
+```
+
+Now plot it
+```{r}
+# Notice `g`plot (from rasterVis) and not `gg`plot
+gplot(Chagos_zoom_proj_crop, maxpixels=10^6) + 
+  geom_raster(aes(fill = value)) +
+  scale_fill_etopo()+
+  # remove margins
+  scale_x_continuous(expand=c(0,0)) +
+  scale_y_continuous(expand=c(0,0))
+```
+
+Now aggregate it (to make it easier to handle) - aiming for between 500k and 1M pixels
+this is a small image so we only need to aggregate 3 by 3, any more and the image becomes fuzzy.  
+te=c needs to match the raster subset above
+```{r}
+gdalUtils::gdalwarp(srcfile="./output/Chagos_zoom_proj",dstfile="./output/Chagos_zoom_proj_crop2", 
+                    tr=c(3,3), te=c(-100,-544,600,400),overwrite = T)
+
+Chagos_zoom_proj_crop2_alt<-raster::raster("./output/Chagos_zoom_proj_crop2")
+```
+
+
+Check the pixel number (ncell) and adjust target resolution (tr) 
+```{r}
+Chagos_zoom_proj_crop2_alt
+```
+
+Looks good so we can run with this
+
+
+
+Fortify the data to 
+```{r}
+Chagos_zoom_fortified<-raster::as.data.frame(Chagos_zoom_proj_crop2_alt,xy=TRUE)
+names(Chagos_zoom_fortified)<-c("long","lat","elevation")
+```
+
+Set which graticules we want to plot (in this case, every 10 degrees for both 
+lat and long) and plot the map
+In the previous section we decided on lat longs of a bounding box (plot limits). 
+That was long between 65 and 80; and lat between -15 and 5.
+```{r}
+prj<-crs(Chagos_zoom_proj_crop2_alt)
+plot_extent<-extent(Chagos_zoom_proj_crop2_alt)
+prj_char_string<-"+proj=aea +lat_1=8.4 +lat_2=-1.7 +lat_0=-5 +lon_0=70 +datum=NAD83 +units=km +no_defs"
+grat<-list(lon=seq(52,90,by=1),lat=seq(-24,10,by=1))
+grat=sf::st_graticule(lon=grat$lon, lat=grat$lat, col="lightgray", ndiscr=100000)
+grat_crop<-sf::st_crop(grat,y=c(xmin=60,xmax=80,ymin=-15,ymax=5))
+grat_proj <- sf::st_transform(grat_crop, prj_char_string)
+grat_proj_crop <- sf::st_crop(grat_proj,y=plot_extent)
+
+
+ggplot() + 
+  geom_raster(data=subset(Chagos_zoom_fortified),aes(x=long, y=lat,fill = elevation)) +
+  scale_fill_etopo()+  
+  geom_sf(data=grat_proj_crop, col='lightgrey', size=0.2)+
+  geom_contour(data=Chagos_zoom_fortified,aes(x=long, y=lat,z=elevation),
+               breaks=c(0), colour="black", size=0.2)+
+  coord_sf(expand=FALSE,crs=prj,xlim=plot_extent[1:2],ylim=plot_extent[3:4])+
+  scale_x_continuous(breaks =grat$lon)+
+  scale_y_continuous(breaks=grat$lat)
+```
+
+
+Add the samples
+
+```{r}
+# give the specific projection in use for this map
+
+Peros_Dt_proj <- sf::st_transform(Peros_Dt$geometry,crs=prj)
+Chagos_Dt_proj <- sf::st_transform(Chagos_Dt$geometry,crs=prj)
+Salomon_Dt_proj <- sf::st_transform(Salomon_Dt$geometry,crs=prj)
+Diego_Dt_proj<- sf::st_transform(Diego_Dt$geometry,crs=prj)
+
+```
+
+
+plot again
+```{r}
+Chagos_zoom_plot <-
+  ggplot() + 
+  geom_raster(data=subset(Chagos_zoom_fortified),aes(x=long, y=lat,fill = elevation)) +
+  scale_fill_etopo()+  
+  geom_sf(data=grat_proj_crop, col='lightgrey', size=0.2)+
+  geom_contour(data=Chagos_zoom_fortified,aes(x=long, y=lat,z=elevation),
+               breaks=c(0), colour="black", size=0.2)+
+  # add samples
+  # colour codes here have 80 added on the end of them, that is an alpha value and affects transparancy
+  ggplot2::geom_sf(data = Peros_Dt_proj, shape = 21, size = 0.667, colour = "#E69F02", fill="#E69F0080", stroke=1) +
+  ggplot2::geom_sf(data = Chagos_Dt_proj, shape = 21, size = 6, colour = "#E69F02", fill="#E69F0080", stroke=1) + 
+  ggplot2::geom_sf(data = Salomon_Dt_proj, shape = 21, size = 2.667, colour = "#E69F02", fill="#E69F0080", stroke=1) + 
+  ggplot2::geom_sf(data = Diego_Dt_proj, shape = 21, size = 0.667, colour = "#E69F02", fill="#E69F0080", stroke=1) +
+  
+  coord_sf(expand=FALSE,crs=prj,xlim=plot_extent[1:2],ylim=plot_extent[3:4])+
+  scale_x_continuous(breaks =grat$lon)+
+  scale_y_continuous(breaks=grat$lat)+
+  #text sizes
+  theme(axis.text=element_text(size=7),axis.title=element_text(size=9),legend.text=element_text(size=7),legend.title=element_text(size=9),plot.margin=unit(c(0.1,0,0.2,0.2),"cm"))+
+  #Legend title
+  labs(fill="elevation (m)")+
+  #Scale bar
+  annotation_scale(style="ticks") 
+
+Chagos_zoom_plot
+
+plot_ratio <- get_asp_ratio(Chagos_Dt_proj)
+ggsave("/home/maddie/Documents/PhD/LGM_paper/new_plots/map/output/Chagos_zoom_LGM_sharks.png",plot=Chagos_zoom_plot,width=plot_ratio*5,height=5)
+```
+
+
+now print plots together:
+```{r}
+library(ggpubr)
+library(tmaptools)
+
+all_plot <- ggarrange(redsea_IO_plot, NULL,
+          ggarrange(redsea_zoom_plot, Chagos_zoom_plot, nrow = 2, labels = c("b)","c)"), legend=FALSE, align="h"), 
+          ncol = 3, common.legend=TRUE, legend="right", widths=c(2,0.1,1.5), labels = "a)"                                        
+          ) 
+
+all_plot
+
+plot_ratio <- get_asp_ratio(Chagos_Dt_proj)
+ggsave("/home/maddie/Documents/PhD/LGM_paper/new_plots/map/output/redsea_IO_LGM_sharks_with_zoom.pdf",plot=all_plot,height=plot_ratio*6)
+```
+
