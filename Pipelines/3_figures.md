@@ -10,7 +10,7 @@ Figure 4. Plots for the posterior distributions of 9 select population parameter
 
 Figure S1. A map of the Red Sea and surrounding areas: [map_redsea.Rmd](https://github.com/mae47/Red_Sea_LGM/blob/main/Scripts/map_redsea.Rmd)
 
-Figure S2. Scatterplots for the cross validation of the estimated vs simulated median and mean for population parameters:
+Figure S2. Scatterplots for the cross validation of the estimated vs simulated median and mean for population parameters: See "5. Power analysis for parameter estimation" in Pipeline [2_data_analysis](https://github.com/mae47/Red_Sea_LGM/blob/main/Pipelines/2_data_analysis.md)
 
 Figure S8. Plots for the posterior distributions (including prior ranges) of all 15 population parameter estimates: See "4. Parameter estimation" in Pipeline [2_data_analysis](https://github.com/mae47/Red_Sea_LGM/blob/main/Pipelines/2_data_analysis.md)
 
