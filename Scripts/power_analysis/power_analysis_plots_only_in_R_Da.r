@@ -15,7 +15,7 @@ paste("combined median and mean plots")
 pdf(paste0(base_path,"/analysis/power_analysis/plots_combined_median_mean_",filename,".pdf"), width=5) #open connection to pdf file
 #par columns and rows, mar plot borders: 1bottom,2left,3top,4right, oma page borders
 par(mfrow = c(3,2),mar=c(4,4,4,4),oma=c(3,1,3,1)) 
-plot(test_obs_data$Nsource_exp, predict_output_Nsource_exp$med, col="red", main="Nsource_exp_median", xlim=c(5.3,6.2), ylim=c(5.3,6.2), xlab="simulated values", ylab="estimated values",cex.main=1,cex.lab=0.9,cex.axis=0.9,mtext("Section 2: Power analysis", outer=TRUE, cex=0.7, adj=0, font=2))
+plot(test_obs_data$Nsource_exp, predict_output_Nsource_exp$med, col="red", main="Nsource_exp_median", xlim=c(5.3,6.2), ylim=c(5.3,6.2), xlab="simulated values", ylab="estimated values",cex.main=1,cex.lab=0.9,cex.axis=0.9,mtext("Section 4: Power analysis", outer=TRUE, cex=0.7, adj=0, font=2))
 abline(a=0, b=1, col="black", lwd=2)
 plot(test_obs_data$Nsource_exp, predict_output_Nsource_exp$expectation, col="red", main="Nsource_exp_mean", xlim=c(5.3,6.2), ylim=c(5.35,6.2), xlab="simulated values", ylab="estimated values",cex.main=1,cex.lab=0.9,cex.axis=0.9)
 abline(a=0, b=1, col="black", lwd=2)
