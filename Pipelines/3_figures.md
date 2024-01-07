@@ -1,6 +1,6 @@
 ## Main text
 
-Figure 1. A map of sampling locations and sample sizes in the Red Sea and Indian Ocean:
+Figure 1. A map of sampling locations and sample sizes in the Red Sea and Indian Ocean: [zoomed_maps_LGM_sharks.Rmd](https://github.com/mae47/Red_Sea_LGM/blob/main/Scripts/zoomed_maps_LGM_sharks.Rmd)
 
 Figure 3. Histograms of simulated nucleotide diversity data, with observed data overlaid in red:
 
