@@ -14,4 +14,4 @@ Figure S2. Scatterplots for the cross validation of the estimated vs simulated m
 
 Figure S8. Plots for the posterior distributions (including prior ranges) of all 15 population parameter estimates: See "4. Parameter estimation" in Pipeline [2_data_analysis](https://github.com/mae47/Red_Sea_LGM/blob/main/Pipelines/2_data_analysis.md)
 
-Figure S9. Heat maps of the imputed, folded 2-dimensional site frequency spectra:
+Figure S9. Heat maps of the imputed, folded 2-dimensional site frequency spectra: See "4. Calculating 2D SFS from vcf" in Pipeline [1_data_generation](https://github.com/mae47/Red_Sea_LGM/blob/main/Pipelines/1_data_generation.md)
