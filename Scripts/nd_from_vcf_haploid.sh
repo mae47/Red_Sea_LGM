@@ -1,7 +1,10 @@
-#This script creates a table of pairwise pi within and between population samples in similar stlye to plink output, with single alleles as haploid individuals, from snps vcf file generated from populations programme (within stacks). Rscript "calculate_obs_data_sumstats_plink_haploid.r" calculates population pairwise pi and Fst from this table.
+#This script creates a table of pairwise pi within and between population samples in similar stlye to plink output, with single alleles as haploid individuals
+#from snps vcf file. Rscript "calculate_obs_data_sumstats_plink_haploid.r" calculates population pairwise pi and Fst from this table.
 
-#folder location of the populations.snps.vcf file with open end (no / )
+#folder location of the snps vcf file with open end (no / )
 path=/home/mae47/rds/hpc-work/RAD_seq/nd_from_vcf
+#unzip file
+gunzip cm_redsea_sey_MQ40_BQ20_ref200bpNs_exons+introns_12_C50_DP6_SP13_NA0_SNPonly.vcf.gz
 
 ##D_abudfur_pops
 #nSites=901186
@@ -66,10 +69,10 @@ echo "$sample1-2" | tr " " '\t' >> pairwise_pi.dist
 		##with missing values
 		
 		##cutting 2 samples from vcf, stacks vcf files
-		#cat $path/populations.snps.vcf | awk 'NR==15 {for (i=1;i<=NF;i++) {f[$i]=i} } {print $(f["'$sample1'"]), $(f["'$sample2'"]) }' | tail -n +16 > tmp 
+		#cat $path/populations.snps.vcf | awk 'NR==15 {for (i=1;i<=NF;i++) {f[$i]=i} } {print $(f["'$sample1'"]), $(f["'$sample2'"]) }' | tail -n +16 > tmp #for teleosts
 		
 		##cutting 2 samples from vcf, sharks vcf files
-		cat $path/populations.snps.vcf | awk 'NR==38 {for (i=1;i<=NF;i++) {f[$i]=i} } {print $(f["'$sample1'"]), $(f["'$sample2'"]) }' | tail -n +39 > tmp #for sharks vcf file
+		cat $path/cm_redsea_sey_MQ40_BQ20_ref200bpNs_exons+introns_12_C50_DP6_SP13_NA0_SNPonly.vcf | awk 'NR==38 {for (i=1;i<=NF;i++) {f[$i]=i} } {print $(f["'$sample1'"]), $(f["'$sample2'"]) }' | tail -n +39 > tmp #for sharks vcf file
 		
 		#cutting genotypes
 		cat tmp | awk -F " " '{sub(/:.*/,"",$1); sub(/:.*/,"",$2); print $1"/"$2}' > tmp_2 && mv tmp_2 tmp
